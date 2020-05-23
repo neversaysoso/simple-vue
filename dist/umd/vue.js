@@ -81,6 +81,49 @@
     };
   });
 
+  var Dep = /*#__PURE__*/function () {
+    // 依赖收集
+    function Dep() {
+      _classCallCheck(this, Dep);
+
+      this.deps = []; // 存放watcher 一个watcher对应一个属性
+    }
+
+    _createClass(Dep, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        this.deps.push(dep);
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.deps.forEach(function (dep) {
+          dep.update();
+        });
+      }
+    }]);
+
+    return Dep;
+  }();
+
+  var Watcher = /*#__PURE__*/function () {
+    // 执行更新
+    function Watcher() {
+      _classCallCheck(this, Watcher);
+
+      Dep.target = this;
+    }
+
+    _createClass(Watcher, [{
+      key: "update",
+      value: function update() {
+        console.log('属性在watcher更新了');
+      }
+    }]);
+
+    return Watcher;
+  }();
+
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
       _classCallCheck(this, Observer);
@@ -93,6 +136,8 @@
       } else {
         this.walk(value);
       }
+
+      new Watcher();
     }
 
     _createClass(Observer, [{
@@ -117,22 +162,22 @@
   function defineReactive(data, key, value) {
     observe(value); // 递归实现深度检测
 
+    var dep = new Dep();
     Object.defineProperty(data, key, {
       set: function set(newVal) {
-        if (newVal !== value) {
-          console.log('更新数据');
-          observe(value);
-          value = newVal;
-        } else {
-          return;
-        }
+        // 观察者
+        if (newVal == value) return;
+        observe(value); // 如果更新了一个对象 则继续检测
+
+        value = newVal;
+        dep.notify();
       },
       get: function get() {
+        Dep.target && dep.addDep(Dep.target);
         return value;
       }
     });
   }
-
   function observe(data) {
     var isObj = isObject(data);
 
@@ -144,28 +189,34 @@
   }
 
   function initState(vm) {
-    var opts = vm.$options;
-
-    if (opts.props) ;
-
-    if (opts.methods) ;
+    var opts = vm.$options; // if (opts.props) {
+    //   initProps(vm)
+    // }
+    // if (opts.methods) {
+    //   initMethod(vm)
+    // }
 
     if (opts.data) {
       initData(vm);
-    }
+    } // if (opts.computed) {
+    //   initComputed(vm)
+    // }
+    // if (opts.watch) {
+    //   initWatch(vm)
+    // }
 
-    if (opts.computed) ;
-
-    if (opts.watch) ;
   }
 
   function initData(vm) {
     var data = vm.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
     observe(data);
+    new Watcher();
+    vm._data.name;
   }
 
   // 生成ast语法树
+
   function compileToFunction(template) {
     return function render() {};
   }

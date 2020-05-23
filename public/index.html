@@ -37,16 +37,13 @@
     })
     setTimeout(() => {
       vm._data.name = "ly"
-    }, 1000)
-
-    setTimeout(() => {
-      vm._data.array.push({
-        c: 'xxxxx'
-      })
-
-      vm._data.array[2].c = 'ppp'
-      console.log(vm._data)
-    }, 2000)
+      setTimeout(() => {
+        vm._data.array.push({
+          c: 'xxxxx'
+        })
+        vm._data.array[2].c = 'ppp'
+      }, 200)
+    }, 200)
   </script>
 </body>
 

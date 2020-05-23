@@ -7,6 +7,10 @@ import {
   arrayMethods
 } from './array'
 
+import Dep from './dep'
+
+import Watcher from './watcher'
+
 class Observer {
   constructor(value) {
     def(value, '__ob__', this)
@@ -16,6 +20,7 @@ class Observer {
     } else {
       this.walk(value)
     }
+    new Watcher()
   }
 
   walk(data) {
@@ -31,19 +36,18 @@ class Observer {
   }
 }
 
-function defineReactive(data, key, value) {
+export function defineReactive(data, key, value) {
   observe(value) // 递归实现深度检测
+  const dep = new Dep()
   Object.defineProperty(data, key, {
-    set(newVal) {
-      if (newVal !== value) {
-        console.log('更新数据')
-        observe(value)
-        value = newVal
-      } else {
-        return
-      }
+    set(newVal) { // 观察者
+      if (newVal == value) return
+      observe(value) // 如果更新了一个对象 则继续检测
+      value = newVal
+      dep.notify()
     },
     get() {
+      Dep.target && dep.addDep(Dep.target)
       return value
     }
   })
