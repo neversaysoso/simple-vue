@@ -1,21 +1,43 @@
-// 生成ast语法树
-const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`
-const qnameCapture = `((?:${ncname}\\:)?${ncname})`
-const startTagOpen = new RegExp(`^<${qnameCapture}`)
-const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
-const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
-const startTagClose = /^\s*(\/?)>/
-const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g
+export class Compile {
+  constructor(el, vm) {
+    this.$el = document.querySelector(el)
+    this.$vm = vm
 
-function parseHTML(html) {
-  while (html) {
-
+    if (this.$el) {
+      this.$fragment = this.node2Fragment(this.$el)
+      this.compile(this.$fragment)
+      this.$el.appendChild(this.$fragment)
+    }
   }
-}
 
-export function compileToFunction(template) {
-  let root = parseHTML(template)
-  return function render() {
+  node2Fragment(el) {
+    const frag = document.createDocumentFragment()
+    let child
+    while (child = el.firstChild) {
+      frag.appendChild(child)
+    }
+    return frag
+  }
 
+  compile(el) {
+    const childNodes = el.childNodes
+    Array.from(childNodes).forEach(node => {
+      if (this.isElement(node)) {
+        console.log('元素' + node.nodeName)
+      } else if (this.isInterpolation(node)) {
+        console.log('文本' + node.textContent)
+      }
+      if (node.childNodes && node.childNodes.length > 0) {
+        this.compile(node)
+      }
+    })
+  }
+
+  isElement(node) {
+    return node.nodeType === 1
+  }
+
+  isInterpolation(node) {
+    return node.nodeType === 3 && /\{\{(.*)\}\}/.test(node.textContent)
   }
 }

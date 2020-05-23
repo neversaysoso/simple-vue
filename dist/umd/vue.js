@@ -211,15 +211,66 @@
     var data = vm.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
     observe(data);
-    new Watcher();
-    vm._data.name;
   }
 
-  // 生成ast语法树
+  var Compile = /*#__PURE__*/function () {
+    function Compile(el, vm) {
+      _classCallCheck(this, Compile);
 
-  function compileToFunction(template) {
-    return function render() {};
-  }
+      this.$el = document.querySelector(el);
+      this.$vm = vm;
+
+      if (this.$el) {
+        this.$fragment = this.node2Fragment(this.$el);
+        this.compile(this.$fragment);
+        this.$el.appendChild(this.$fragment);
+      }
+    }
+
+    _createClass(Compile, [{
+      key: "node2Fragment",
+      value: function node2Fragment(el) {
+        var frag = document.createDocumentFragment();
+        var child;
+
+        while (child = el.firstChild) {
+          frag.appendChild(child);
+        }
+
+        return frag;
+      }
+    }, {
+      key: "compile",
+      value: function compile(el) {
+        var _this = this;
+
+        var childNodes = el.childNodes;
+        Array.from(childNodes).forEach(function (node) {
+          if (_this.isElement(node)) {
+            console.log('元素' + node.nodeName);
+          } else if (_this.isInterpolation(node)) {
+            console.log('文本' + node.textContent);
+          }
+
+          if (node.childNodes && node.childNodes.length > 0) {
+            _this.compile(node);
+          }
+        });
+      }
+    }, {
+      key: "isElement",
+      value: function isElement(node) {
+        return node.nodeType === 1;
+      }
+    }, {
+      key: "isInterpolation",
+      value: function isInterpolation(node) {
+        return node.nodeType === 3 && /\{\{(.*)\}\}/.test(node.textContent);
+      }
+    }]);
+
+    return Compile;
+  }();
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
@@ -233,21 +284,19 @@
     };
 
     Vue.prototype.$mount = function (el) {
-      var vm = this;
-      var options = vm.$options;
-      el = document.querySelector(el);
-
-      if (!options.render) {
-        var template = options.template;
-
-        if (!template && el) {
-          template = el.outerHTML;
-        }
-
-        var render = compileToFunction();
-        options.render = render;
-      } // options.render
-
+      // const vm = this
+      // const options = vm.$options
+      // el = document.querySelector(el)
+      // if (!options.render) {
+      //   let template = options.template
+      //   if (!template && el) {
+      //     template = el.outerHTML
+      //   }
+      //   const render = compileToFunction(template)
+      //   options.render = render
+      // }
+      // options.render
+      new Compile(el, this);
     };
   }
 

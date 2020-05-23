@@ -12,6 +12,8 @@
 <body>
   <div id="app">
     <p>name: {{name}}</p>
+    <div v-text="name"></div>
+    <div v-html="html"></div>
     <p>age: {{age}}</p>
   </div>
   <script src="/dist/umd/vue.js"></script>
@@ -21,6 +23,7 @@
       data() {
         return {
           name: 'myname',
+          html: '<button>按钮</button>',
           age: 12,
           address: {
             name: '杭州'
