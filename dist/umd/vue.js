@@ -165,11 +165,38 @@
     observe(data);
   }
 
+  // 生成ast语法树
+  function compileToFunction(template) {
+    return function render() {};
+  }
+
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
       vm.$options = options;
       initState(vm);
+
+      if (vm.$options.el) {
+        vm.$mount(vm.$options.el);
+      }
+    };
+
+    Vue.prototype.$mount = function (el) {
+      var vm = this;
+      var options = vm.$options;
+      el = document.querySelector(el);
+
+      if (!options.render) {
+        var template = options.template;
+
+        if (!template && el) {
+          template = el.outerHTML;
+        }
+
+        var render = compileToFunction();
+        options.render = render;
+      } // options.render
+
     };
   }
 
