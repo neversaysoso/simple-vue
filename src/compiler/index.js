@@ -1,7 +1,4 @@
 import Watcher from "../observer/watcher"
-import {
-  throttle
-} from '../utils/index'
 
 export class Compile {
   constructor(el, vm) {
@@ -63,9 +60,9 @@ export class Compile {
   // 双向绑定
   model(node, vm, exp) {
     this.update(node, vm, exp, 'model')
-    node.addEventListener('input', throttle(e => {
+    node.addEventListener('input', e => {
       vm[exp] = e.target.value
-    }))
+    })
   }
 
   modelUpdater(node, value) {

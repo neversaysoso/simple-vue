@@ -13,7 +13,6 @@ class Observer {
   constructor(value, vm) {
     this.value = value
     this.vm = vm
-    console.log(this.vm)
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
       value.__proto__ = arrayMethods
@@ -53,12 +52,14 @@ class Observer {
     Object.defineProperty(data, key, {
       set(newVal) { // 观察者
         if (newVal == value) return
-        observe(value, this.vm) // 如果更新了一个对象 则继续检测
+        // observe(value, this.vm) // 如果更新了一个对象 则继续检测
         value = newVal
         dep.notify()
+        console.log('set')
       },
       get() {
         Dep.target && dep.addDep(Dep.target)
+        console.log('get')
         return value
       }
     })

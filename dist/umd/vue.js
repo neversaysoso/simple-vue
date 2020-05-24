@@ -52,24 +52,6 @@
       value: value
     });
   }
-  function throttle(fn) {
-    var _this = this;
-
-    var wait = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 100;
-    var lastTime = Date.now();
-    return function () {
-      var now = Date.now();
-
-      if (now - lastTime > wait) {
-        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-          args[_key] = arguments[_key];
-        }
-
-        fn.apply(_this, args);
-        lastTime = now;
-      }
-    };
-  }
 
   var oldarrayMethods = Array.prototype;
   var arrayMethods = Object.create(oldarrayMethods);
@@ -130,7 +112,6 @@
 
       this.value = value;
       this.vm = vm;
-      console.log(this.vm);
       def(value, '__ob__', this);
 
       if (Array.isArray(value)) {
@@ -180,14 +161,15 @@
         Object.defineProperty(data, key, {
           set: function set(newVal) {
             // 观察者
-            if (newVal == value) return;
-            observe(value, this.vm); // 如果更新了一个对象 则继续检测
+            if (newVal == value) return; // observe(value, this.vm) // 如果更新了一个对象 则继续检测
 
             value = newVal;
             dep.notify();
+            console.log('set');
           },
           get: function get() {
             Dep.target && dep.addDep(Dep.target);
+            console.log('get');
             return value;
           }
         });
@@ -242,6 +224,7 @@
       this.cb = cb;
       Dep.target = this;
       this.vm[this.key];
+      Dep.target = null;
     }
 
     _createClass(Watcher, [{
@@ -330,9 +313,9 @@
       key: "model",
       value: function model(node, vm, exp) {
         this.update(node, vm, exp, 'model');
-        node.addEventListener('input', throttle(function (e) {
+        node.addEventListener('input', function (e) {
           vm[exp] = e.target.value;
-        }));
+        });
       }
     }, {
       key: "modelUpdater",

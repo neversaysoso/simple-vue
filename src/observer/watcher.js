@@ -7,6 +7,7 @@ export default class Watcher { // 执行更新
     this.cb = cb
     Dep.target = this
     this.vm[this.key]
+    Dep.target = null
   }
   update() {
     this.cb.call(this.vm, this.vm[this.key])
