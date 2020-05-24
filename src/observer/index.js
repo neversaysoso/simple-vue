@@ -55,11 +55,9 @@ class Observer {
         // observe(value, this.vm) // 如果更新了一个对象 则继续检测
         value = newVal
         dep.notify()
-        console.log('set')
       },
       get() {
         Dep.target && dep.addDep(Dep.target)
-        console.log('get')
         return value
       }
     })

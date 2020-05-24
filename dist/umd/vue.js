@@ -165,11 +165,9 @@
 
             value = newVal;
             dep.notify();
-            console.log('set');
           },
           get: function get() {
             Dep.target && dep.addDep(Dep.target);
-            console.log('get');
             return value;
           }
         });
