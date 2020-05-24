@@ -52,6 +52,24 @@
       value: value
     });
   }
+  function throttle(fn) {
+    var _this = this;
+
+    var wait = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 100;
+    var lastTime = Date.now();
+    return function () {
+      var now = Date.now();
+
+      if (now - lastTime > wait) {
+        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+          args[_key] = arguments[_key];
+        }
+
+        fn.apply(_this, args);
+        lastTime = now;
+      }
+    };
+  }
 
   var oldarrayMethods = Array.prototype;
   var arrayMethods = Object.create(oldarrayMethods);
@@ -106,28 +124,13 @@
     return Dep;
   }();
 
-  var Watcher = /*#__PURE__*/function () {
-    // 执行更新
-    function Watcher() {
-      _classCallCheck(this, Watcher);
-
-      Dep.target = this;
-    }
-
-    _createClass(Watcher, [{
-      key: "update",
-      value: function update() {
-        console.log('属性在watcher更新了');
-      }
-    }]);
-
-    return Watcher;
-  }();
-
   var Observer = /*#__PURE__*/function () {
-    function Observer(value) {
+    function Observer(value, vm) {
       _classCallCheck(this, Observer);
 
+      this.value = value;
+      this.vm = vm;
+      console.log(this.vm);
       def(value, '__ob__', this);
 
       if (Array.isArray(value)) {
@@ -136,15 +139,17 @@
       } else {
         this.walk(value);
       }
-
-      new Watcher();
     }
 
     _createClass(Observer, [{
       key: "walk",
       value: function walk(data) {
+        var _this = this;
+
         Object.keys(data).forEach(function (key) {
-          defineReactive(data, key, data[key]);
+          _this.defineReactive(data, key, data[key]);
+
+          _this.proxyData(key);
         });
       }
     }, {
@@ -154,38 +159,52 @@
           observe(v);
         });
       }
+    }, {
+      key: "proxyData",
+      value: function proxyData(key) {
+        Object.defineProperty(this.vm, key, {
+          get: function get() {
+            return this._data[key];
+          },
+          set: function set(newVal) {
+            this._data[key] = newVal;
+          }
+        });
+      }
+    }, {
+      key: "defineReactive",
+      value: function defineReactive(data, key, value) {
+        observe(value, this.vm); // 递归实现深度检测
+
+        var dep = new Dep();
+        Object.defineProperty(data, key, {
+          set: function set(newVal) {
+            // 观察者
+            if (newVal == value) return;
+            observe(value, this.vm); // 如果更新了一个对象 则继续检测
+
+            value = newVal;
+            dep.notify();
+          },
+          get: function get() {
+            Dep.target && dep.addDep(Dep.target);
+            return value;
+          }
+        });
+      }
     }]);
 
     return Observer;
   }();
 
-  function defineReactive(data, key, value) {
-    observe(value); // 递归实现深度检测
-
-    var dep = new Dep();
-    Object.defineProperty(data, key, {
-      set: function set(newVal) {
-        // 观察者
-        if (newVal == value) return;
-        observe(value); // 如果更新了一个对象 则继续检测
-
-        value = newVal;
-        dep.notify();
-      },
-      get: function get() {
-        Dep.target && dep.addDep(Dep.target);
-        return value;
-      }
-    });
-  }
-  function observe(data) {
+  function observe(data, vm) {
     var isObj = isObject(data);
 
     if (!isObj) {
       return;
     }
 
-    return new Observer(data);
+    return new Observer(data, vm);
   }
 
   function initState(vm) {
@@ -210,8 +229,30 @@
   function initData(vm) {
     var data = vm.$options.data;
     data = vm._data = typeof data === 'function' ? data.call(vm) : data;
-    observe(data);
+    observe(data, vm);
   }
+
+  var Watcher = /*#__PURE__*/function () {
+    // 执行更新
+    function Watcher(vm, key, cb) {
+      _classCallCheck(this, Watcher);
+
+      this.vm = vm;
+      this.key = key;
+      this.cb = cb;
+      Dep.target = this;
+      this.vm[this.key];
+    }
+
+    _createClass(Watcher, [{
+      key: "update",
+      value: function update() {
+        this.cb.call(this.vm, this.vm[this.key]);
+      }
+    }]);
+
+    return Watcher;
+  }();
 
   var Compile = /*#__PURE__*/function () {
     function Compile(el, vm) {
@@ -247,15 +288,100 @@
         var childNodes = el.childNodes;
         Array.from(childNodes).forEach(function (node) {
           if (_this.isElement(node)) {
-            console.log('元素' + node.nodeName);
+            // console.log('元素' + node.nodeName)
+            var nodeAttr = node.attributes;
+            Array.from(nodeAttr).forEach(function (attr) {
+              var attrName = attr.name;
+              var exp = attr.value;
+
+              if (_this.isDirective(attrName)) {
+                var dir = attrName.substring(2);
+                _this[dir] && _this[dir](node, _this.$vm, exp);
+              }
+
+              if (_this.isEvent(attrName)) {
+                var _dir = attrName.substring(1);
+
+                _this.eventHandler(node, _this.$vm, exp, _dir);
+              }
+            });
           } else if (_this.isInterpolation(node)) {
-            console.log('文本' + node.textContent);
+            // console.log('文本' + node.textContent)
+            _this.compileText(node);
           }
 
           if (node.childNodes && node.childNodes.length > 0) {
             _this.compile(node);
           }
         });
+      } // 事件处理
+
+    }, {
+      key: "eventHandler",
+      value: function eventHandler(node, vm, exp, dir) {
+        var fn = vm.$options.methods && vm.$options.methods[exp];
+
+        if (dir && fn) {
+          node.addEventListener(dir, fn.bind(vm));
+        }
+      } // 双向绑定
+
+    }, {
+      key: "model",
+      value: function model(node, vm, exp) {
+        this.update(node, vm, exp, 'model');
+        node.addEventListener('input', throttle(function (e) {
+          vm[exp] = e.target.value;
+        }));
+      }
+    }, {
+      key: "modelUpdater",
+      value: function modelUpdater(node, value) {
+        node.value = value;
+      }
+    }, {
+      key: "text",
+      value: function text(node, vm, exp) {
+        this.update(node, vm, exp, 'text');
+      }
+    }, {
+      key: "html",
+      value: function html(node, vm, exp) {
+        this.update(node, vm, exp, 'html');
+      }
+    }, {
+      key: "isDirective",
+      value: function isDirective(attr) {
+        return attr.indexOf('v-') === 0;
+      }
+    }, {
+      key: "isEvent",
+      value: function isEvent(attr) {
+        return attr.indexOf('@') === 0;
+      }
+    }, {
+      key: "compileText",
+      value: function compileText(node) {
+        this.update(node, this.$vm, RegExp.$1, 'text');
+      }
+    }, {
+      key: "update",
+      value: function update(node, vm, exp, dir) {
+        var updateFn = this[dir + 'Updater'];
+        updateFn && updateFn(node, vm[exp]);
+        new Watcher(vm, exp, function (val) {
+          updateFn && updateFn(node, val);
+        });
+      }
+    }, {
+      key: "textUpdater",
+      value: function textUpdater(node, value) {
+        node.textContent = value;
+      }
+    }, {
+      key: "htmlUpdater",
+      value: function htmlUpdater(node, value) {
+        node.innerHTML = value;
       }
     }, {
       key: "isElement",
@@ -297,6 +423,10 @@
       // }
       // options.render
       new Compile(el, this);
+
+      if (this.$options.created) {
+        this.$options.created.call(this);
+      }
     };
   }
 

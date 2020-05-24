@@ -9,3 +9,14 @@ export function def(data, key, value) {
     value
   })
 }
+
+export function throttle(fn, wait = 100) {
+  let lastTime = Date.now()
+  return (...args) => {
+    let now = Date.now()
+    if (now - lastTime > wait) {
+      fn.apply(this, args)
+      lastTime = now
+    }
+  }
+}

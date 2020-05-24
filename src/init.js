@@ -33,5 +33,9 @@ export function initMixin(Vue) {
     // }
     // options.render
     new Compile(el, this)
+
+    if (this.$options.created) {
+      this.$options.created.call(this)
+    }
   }
 }

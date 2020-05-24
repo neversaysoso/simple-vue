@@ -11,10 +11,13 @@
 
 <body>
   <div id="app">
-    <p>name: {{name}}</p>
+    <p>name: <span>{{name}}</span></p>
+    <p>age: <span>{{age}}</span></p>
     <div v-text="name"></div>
     <div v-html="html"></div>
-    <p>age: {{age}}</p>
+    <button @click="handleOnClick">点我长大一岁</button>
+    <input type="text"
+           v-model="name" />
   </div>
   <script src="/dist/umd/vue.js"></script>
   <script>
@@ -23,30 +26,31 @@
       data() {
         return {
           name: 'myname',
-          html: '<button>按钮</button>',
+          html: '<button>v-html插入元素</button>',
           age: 12,
-          address: {
-            name: '杭州'
-          },
-          array: [{
-              a: 1
-            },
-            {
-              a: 2
-            }
-          ]
+          // address: {
+          //   area: '杭州'
+          // },
+          // array: [{
+          //     a: 1
+          //   },
+          //   {
+          //     a: 2
+          //   }
+          // ]
         }
+      },
+      methods: {
+        handleOnClick() {
+          this.age += 1
+        }
+      },
+      created() {
+        setTimeout(() => {
+          vm.name = "dashuaib"
+        }, 200)
       }
     })
-    setTimeout(() => {
-      vm._data.name = "ly"
-      setTimeout(() => {
-        vm._data.array.push({
-          c: 'xxxxx'
-        })
-        vm._data.array[2].c = 'ppp'
-      }, 200)
-    }, 200)
   </script>
 </body>
 

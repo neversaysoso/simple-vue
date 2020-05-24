@@ -9,10 +9,11 @@ import {
 
 import Dep from './dep'
 
-import Watcher from './watcher'
-
 class Observer {
-  constructor(value) {
+  constructor(value, vm) {
+    this.value = value
+    this.vm = vm
+    console.log(this.vm)
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
       value.__proto__ = arrayMethods
@@ -20,12 +21,12 @@ class Observer {
     } else {
       this.walk(value)
     }
-    new Watcher()
   }
 
   walk(data) {
     Object.keys(data).forEach(key => {
-      defineReactive(data, key, data[key])
+      this.defineReactive(data, key, data[key])
+      this.proxyData(key)
     })
   }
 
@@ -34,29 +35,40 @@ class Observer {
       observe(v)
     })
   }
+
+  proxyData(key) {
+    Object.defineProperty(this.vm, key, {
+      get() {
+        return this._data[key]
+      },
+      set(newVal) {
+        this._data[key] = newVal
+      }
+    })
+  }
+
+  defineReactive(data, key, value) {
+    observe(value, this.vm) // 递归实现深度检测
+    const dep = new Dep()
+    Object.defineProperty(data, key, {
+      set(newVal) { // 观察者
+        if (newVal == value) return
+        observe(value, this.vm) // 如果更新了一个对象 则继续检测
+        value = newVal
+        dep.notify()
+      },
+      get() {
+        Dep.target && dep.addDep(Dep.target)
+        return value
+      }
+    })
+  }
 }
 
-export function defineReactive(data, key, value) {
-  observe(value) // 递归实现深度检测
-  const dep = new Dep()
-  Object.defineProperty(data, key, {
-    set(newVal) { // 观察者
-      if (newVal == value) return
-      observe(value) // 如果更新了一个对象 则继续检测
-      value = newVal
-      dep.notify()
-    },
-    get() {
-      Dep.target && dep.addDep(Dep.target)
-      return value
-    }
-  })
-}
-
-export function observe(data) {
+export function observe(data, vm) {
   let isObj = isObject(data)
   if (!isObj) {
     return
   }
-  return new Observer(data)
+  return new Observer(data, vm)
 }

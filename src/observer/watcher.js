@@ -1,10 +1,14 @@
 import Dep from './dep'
 
 export default class Watcher { // 执行更新
-  constructor() {
+  constructor(vm, key, cb) {
+    this.vm = vm
+    this.key = key
+    this.cb = cb
     Dep.target = this
+    this.vm[this.key]
   }
   update() {
-    console.log('属性在watcher更新了')
+    this.cb.call(this.vm, this.vm[this.key])
   }
 }
